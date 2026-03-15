@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "Abstract hero image for CareerPilot AI",
+      "imageUrl": "https://picsum.photos/seed/careerpilot-hero/1200/800",
+      "imageHint": "abstract tech"
+    }
+  ]
 }
