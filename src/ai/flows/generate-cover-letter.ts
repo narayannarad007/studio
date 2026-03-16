@@ -47,6 +47,7 @@ const prompt = ai.definePrompt({
   name: 'generateCoverLetterPrompt',
   input: { schema: GenerateCoverLetterInputSchema },
   output: { schema: GenerateCoverLetterOutputSchema },
+  model: 'gemini-1.5-flash-latest',
   prompt: `You are an expert career coach and cover letter writer. Your task is to generate a tailored cover letter for a job applicant, based on their profile, resume summary, the job description, and a specified tone.
 
 Applicant's Profile:

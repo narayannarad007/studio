@@ -61,6 +61,7 @@ const resumeParsingPrompt = ai.definePrompt({
   name: 'resumeParsingPrompt',
   input: { schema: ParseResumeInputSchema },
   output: { schema: ParseResumeOutputSchema },
+  model: 'gemini-1.5-flash-latest',
   prompt: `You are an expert resume parser. Your task is to extract all relevant information from the provided resume and structure it into a JSON object according to the specified output schema.
 
 Carefully read through the resume and identify:

@@ -51,6 +51,7 @@ const prepareForInterviewPrompt = ai.definePrompt({
   name: 'prepareForInterviewPrompt',
   input: { schema: InterviewPrepInputSchema },
   output: { schema: InterviewPrepOutputSchema },
+  model: 'gemini-1.5-flash-latest',
   prompt: `You are an AI career coach specializing in interview preparation.
 
 Your task is to generate likely interview questions (behavioral, technical, and role-fit) based on the provided job description and the user's profile. Additionally, provide concise, actionable guidance for answering these types of questions.

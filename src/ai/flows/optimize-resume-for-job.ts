@@ -74,6 +74,7 @@ const prompt = ai.definePrompt({
   name: 'optimizeResumeForJobPrompt',
   input: { schema: OptimizeResumeForJobInputSchema },
   output: { schema: OptimizeResumeForJobOutputSchema },
+  model: 'gemini-1.5-flash-latest',
   prompt: `You are an expert career coach and resume writer. Your task is to analyze a job description and a candidate's resume, then provide actionable suggestions to optimize the resume for that specific job, focusing on Applicant Tracking System (ATS) compatibility and relevance.
 
 Here is the job description:

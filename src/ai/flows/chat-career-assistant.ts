@@ -41,6 +41,7 @@ const careerAssistantPrompt = ai.definePrompt({
   name: 'careerAssistantPrompt',
   input: {schema: CareerAssistantPromptInputSchema},
   output: {schema: AICareerAssistantChatOutputSchema},
+  model: 'gemini-1.5-flash-latest',
   prompt: `You are an AI Career Assistant, designed to help job seekers with their career questions.
 You have access to the user's profile, resume, and saved job information.
 Use this information to provide accurate, helpful, and contextual advice.
