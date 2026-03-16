@@ -1,0 +1,2044 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user's core identity in the system, primarily for linking user-specific data to an external authentication system. Contains basic information not managed by the external auth.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address associated with the user account.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the user account details.",
+          "format": "date-time"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp of the user's last login.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores detailed professional and personal information provided by the user, used for AI analysis and tailoring.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User this profile belongs to. (Relationship: User 1:1 UserProfile)"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's primary email address, primarily for display and consistency, linked to the User entity.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Optional phone number for the user."
+        },
+        "preferredRoles": {
+          "type": "array",
+          "description": "A list of job roles the user is actively seeking or prefers.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preferredLocations": {
+          "type": "array",
+          "description": "A list of geographical locations where the user prefers to work.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "yearsOfExperience": {
+          "type": "number",
+          "description": "Total years of professional experience the user has."
+        },
+        "currentOrLastJobTitle": {
+          "type": "string",
+          "description": "The user's current or most recent job title."
+        },
+        "keySkills": {
+          "type": "array",
+          "description": "A list of the user's most relevant professional skills.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "industriesOfInterest": {
+          "type": "array",
+          "description": "A list of industries the user is interested in working for.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "salaryExpectation": {
+          "type": "number",
+          "description": "Optional salary expectation for the user, in a standard currency (e.g., USD annual equivalent)."
+        },
+        "workModePreference": {
+          "type": "string",
+          "description": "User's preferred work mode (remote, hybrid, or onsite).",
+          "format": "enum"
+        },
+        "profileCompletenessScore": {
+          "type": "number",
+          "description": "A calculated score indicating how complete the user's profile is (0-100)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the user profile.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fullName",
+        "email",
+        "yearsOfExperience",
+        "currentOrLastJobTitle",
+        "keySkills",
+        "workModePreference",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Resume": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Resume",
+      "type": "object",
+      "description": "Stores metadata about a user's uploaded resume document (e.g., PDF/DOCX). The actual content is stored in Cloud Storage.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Resume entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this resume. (Relationship: User 1:N Resume)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original file name of the uploaded resume."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Path to the resume file in Cloud Storage.",
+          "format": "uri"
+        },
+        "isPrimary": {
+          "type": "boolean",
+          "description": "Indicates if this is the user's primary resume for analysis."
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Timestamp when the resume file was uploaded.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the resume record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the resume record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fileName",
+        "storagePath",
+        "isPrimary",
+        "uploadedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ParsedResumeData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ParsedResumeData",
+      "type": "object",
+      "description": "Stores the AI-parsed structured data extracted from an uploaded resume, enabling deeper analysis.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ParsedResumeData entity."
+        },
+        "resumeId": {
+          "type": "string",
+          "description": "Reference to the Resume document this data was parsed from. (Relationship: Resume 1:1 ParsedResumeData)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this parsed resume data. (Relationship: User 1:N ParsedResumeData)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name extracted from the resume."
+        },
+        "headline": {
+          "type": "string",
+          "description": "Professional headline or current job title extracted from the resume."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Professional summary or objective extracted from the resume."
+        },
+        "skills": {
+          "type": "array",
+          "description": "A list of skills extracted from the resume.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "experienceIds": {
+          "type": "array",
+          "description": "References to individual ParsedResumeExperience entries. (Relationship: ParsedResumeData 1:N ParsedResumeExperience)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "educationIds": {
+          "type": "array",
+          "description": "References to individual ParsedResumeEducation entries. (Relationship: ParsedResumeData 1:N ParsedResumeEducation)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "certificationIds": {
+          "type": "array",
+          "description": "References to individual ParsedResumeCertification entries. (Relationship: ParsedResumeData 1:N ParsedResumeCertification)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "projectIds": {
+          "type": "array",
+          "description": "References to individual ParsedResumeProject entries. (Relationship: ParsedResumeData 1:N ParsedResumeProject)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parsedAt": {
+          "type": "string",
+          "description": "Timestamp when the resume data was last parsed.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the parsed resume data record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the parsed resume data record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "resumeId",
+        "userId",
+        "name",
+        "skills",
+        "parsedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ParsedResumeExperience": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ParsedResumeExperience",
+      "type": "object",
+      "description": "Represents a single work experience entry parsed from a resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ParsedResumeExperience entity."
+        },
+        "parsedResumeDataId": {
+          "type": "string",
+          "description": "Reference to the ParsedResumeData this experience belongs to. (Relationship: ParsedResumeData 1:N ParsedResumeExperience)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Job title for this experience."
+        },
+        "company": {
+          "type": "string",
+          "description": "Company name for this experience."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the company or work for this experience."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of this experience.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of this experience (optional, if current).",
+          "format": "date-time"
+        },
+        "descriptionBullets": {
+          "type": "array",
+          "description": "Key responsibilities and achievements as a list of bullet points.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the experience record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the experience record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "parsedResumeDataId",
+        "title",
+        "company",
+        "startDate",
+        "descriptionBullets",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ParsedResumeEducation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ParsedResumeEducation",
+      "type": "object",
+      "description": "Represents a single education entry parsed from a resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ParsedResumeEducation entity."
+        },
+        "parsedResumeDataId": {
+          "type": "string",
+          "description": "Reference to the ParsedResumeData this education belongs to. (Relationship: ParsedResumeData 1:N ParsedResumeEducation)"
+        },
+        "degree": {
+          "type": "string",
+          "description": "Degree or qualification obtained."
+        },
+        "institution": {
+          "type": "string",
+          "description": "Name of the educational institution."
+        },
+        "fieldOfStudy": {
+          "type": "string",
+          "description": "Field of study or major."
+        },
+        "graduationDate": {
+          "type": "string",
+          "description": "Graduation or completion date.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the education record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the education record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "parsedResumeDataId",
+        "degree",
+        "institution",
+        "graduationDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ParsedResumeCertification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ParsedResumeCertification",
+      "type": "object",
+      "description": "Represents a single certification parsed from a resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ParsedResumeCertification entity."
+        },
+        "parsedResumeDataId": {
+          "type": "string",
+          "description": "Reference to the ParsedResumeData this certification belongs to. (Relationship: ParsedResumeData 1:N ParsedResumeCertification)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the certification."
+        },
+        "issuer": {
+          "type": "string",
+          "description": "Issuing organization for the certification."
+        },
+        "dateIssued": {
+          "type": "string",
+          "description": "Date the certification was issued or obtained.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the certification record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the certification record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "parsedResumeDataId",
+        "name",
+        "issuer",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ParsedResumeProject": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ParsedResumeProject",
+      "type": "object",
+      "description": "Represents a single project entry parsed from a resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ParsedResumeProject entity."
+        },
+        "parsedResumeDataId": {
+          "type": "string",
+          "description": "Reference to the ParsedResumeData this project belongs to. (Relationship: ParsedResumeData 1:N ParsedResumeProject)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the project, including achievements and technologies."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to the project (e.g., GitHub, portfolio link).",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the project record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the project record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "parsedResumeDataId",
+        "name",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Job": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Job",
+      "type": "object",
+      "description": "Stores the normalized data of a job posting, imported by the user for analysis and tracking.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Job entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who imported this job. (Relationship: User 1:N Job)"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "The URL from which the job was imported, if applicable.",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "description": "The job title."
+        },
+        "company": {
+          "type": "string",
+          "description": "The name of the company offering the job."
+        },
+        "location": {
+          "type": "string",
+          "description": "The geographical location of the job."
+        },
+        "employmentType": {
+          "type": "string",
+          "description": "Type of employment (e.g., Full-time, Part-time, Contract)."
+        },
+        "description": {
+          "type": "string",
+          "description": "The full, raw job description text."
+        },
+        "responsibilities": {
+          "type": "array",
+          "description": "A list of key responsibilities for the role.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiredSkills": {
+          "type": "array",
+          "description": "A list of skills explicitly marked as required for the job.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preferredSkills": {
+          "type": "array",
+          "description": "A list of skills marked as preferred or advantageous for the job.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "seniority": {
+          "type": "string",
+          "description": "The level of seniority for the role (e.g., Junior, Mid-level, Senior, Lead)."
+        },
+        "applicationUrl": {
+          "type": "string",
+          "description": "The direct URL to apply for the job, if detectable.",
+          "format": "uri"
+        },
+        "importedAt": {
+          "type": "string",
+          "description": "Timestamp when the job was imported into the system.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the job record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the job record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "company",
+        "location",
+        "description",
+        "importedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserSavedJob": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSavedJob",
+      "type": "object",
+      "description": "Tracks the status and user-specific details for a saved job, forming the core of the application tracker.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserSavedJob entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who saved this job. (Relationship: User 1:N UserSavedJob)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job that was saved. (Relationship: Job 1:N UserSavedJob)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current application status of the job for the user (e.g., saved, applied, interview).",
+          "format": "enum"
+        },
+        "appliedDate": {
+          "type": "string",
+          "description": "The date when the user applied for this job, if applicable.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes related to this job application."
+        },
+        "reminderDate": {
+          "type": "string",
+          "description": "A specific date set by the user for a reminder related to this job.",
+          "format": "date-time"
+        },
+        "followUpFlag": {
+          "type": "boolean",
+          "description": "A flag indicating if a follow-up is needed for this job."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the job was first saved by the user.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the saved job's status or details.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "jobId",
+        "status",
+        "followUpFlag",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "JobAnalysis": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobAnalysis",
+      "type": "object",
+      "description": "Stores the results of AI analysis performed on a specific job, comparing it against the user's profile and/or resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the JobAnalysis entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom this analysis was performed. (Relationship: User 1:N JobAnalysis)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job that was analyzed. (Relationship: Job 1:N JobAnalysis)"
+        },
+        "resumeId": {
+          "type": "string",
+          "description": "Optional reference to the specific Resume used for this analysis, if applicable. (Relationship: Resume 1:N JobAnalysis)"
+        },
+        "matchScore": {
+          "type": "number",
+          "description": "An AI-calculated score (0-100) indicating how well the user matches the job requirements."
+        },
+        "strengths": {
+          "type": "array",
+          "description": "A list of skills or experiences where the user strongly matches the job.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gaps": {
+          "type": "array",
+          "description": "A list of skills or experiences identified as missing or weak for the job.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendationSummary": {
+          "type": "string",
+          "description": "A short, AI-generated summary of recommendations for improving chances."
+        },
+        "nextActions": {
+          "type": "array",
+          "description": "Actionable suggestions generated by AI (e.g., 'Update resume bullet point X').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "analysisDate": {
+          "type": "string",
+          "description": "Timestamp when the job analysis was performed.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the analysis record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the analysis record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "jobId",
+        "matchScore",
+        "strengths",
+        "gaps",
+        "recommendationSummary",
+        "analysisDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ResumeOptimization": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ResumeOptimization",
+      "type": "object",
+      "description": "Stores AI-generated suggestions for optimizing a user's resume for a specific job.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ResumeOptimization entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom this optimization was performed. (Relationship: User 1:N ResumeOptimization)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job for which the resume was optimized. (Relationship: Job 1:N ResumeOptimization)"
+        },
+        "originalResumeId": {
+          "type": "string",
+          "description": "Reference to the original Resume document that was optimized. (Relationship: Resume 1:N ResumeOptimization)"
+        },
+        "keywordSuggestions": {
+          "type": "array",
+          "description": "A list of ATS-friendly keywords suggested for the resume based on the job description.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "revisedSummarySuggestion": {
+          "type": "string",
+          "description": "AI-generated suggestion for an improved professional summary."
+        },
+        "revisedBulletSuggestionIds": {
+          "type": "array",
+          "description": "References to individual RevisedBulletSuggestion entries for experience and responsibilities. (Relationship: ResumeOptimization 1:N RevisedBulletSuggestion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "atsImprovementNotes": {
+          "type": "string",
+          "description": "General notes or tips from AI for improving the resume's Applicant Tracking System compatibility."
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the resume optimization suggestions were generated.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the optimization record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the optimization record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "jobId",
+        "originalResumeId",
+        "keywordSuggestions",
+        "atsImprovementNotes",
+        "generatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RevisedBulletSuggestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RevisedBulletSuggestion",
+      "type": "object",
+      "description": "Represents an AI-generated suggestion for improving a single bullet point in a resume for a specific job.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RevisedBulletSuggestion entity."
+        },
+        "resumeOptimizationId": {
+          "type": "string",
+          "description": "Reference to the ResumeOptimization this suggestion belongs to. (Relationship: ResumeOptimization 1:N RevisedBulletSuggestion)"
+        },
+        "originalContext": {
+          "type": "string",
+          "description": "The original bullet point or phrase that was optimized."
+        },
+        "suggestedBullet": {
+          "type": "string",
+          "description": "The AI-generated improved version of the bullet point."
+        },
+        "relevanceScore": {
+          "type": "number",
+          "description": "An optional score indicating the relevance or impact of this suggestion (0-100)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the suggestion record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the suggestion record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "resumeOptimizationId",
+        "suggestedBullet",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CoverLetter": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CoverLetter",
+      "type": "object",
+      "description": "Stores AI-generated, tailored cover letters for specific jobs.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CoverLetter entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who generated this cover letter. (Relationship: User 1:N CoverLetter)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job for which the cover letter was generated. (Relationship: Job 1:N CoverLetter)"
+        },
+        "coverLetterText": {
+          "type": "string",
+          "description": "The full text of the generated cover letter."
+        },
+        "tone": {
+          "type": "string",
+          "description": "The selected tone for the cover letter (e.g., professional, confident, concise).",
+          "format": "enum"
+        },
+        "strongPointsUsed": {
+          "type": "array",
+          "description": "A list of strong points from the user's profile/resume that were highlighted in the cover letter.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the cover letter was generated.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the cover letter record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the cover letter record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "jobId",
+        "coverLetterText",
+        "tone",
+        "generatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InterviewPrep": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InterviewPrep",
+      "type": "object",
+      "description": "Stores AI-generated interview questions and answer guidance for a specific job.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the InterviewPrep entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom this interview preparation was generated. (Relationship: User 1:N InterviewPrep)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Reference to the Job for which interview preparation was created. (Relationship: Job 1:N InterviewPrep)"
+        },
+        "behavioralQuestionIds": {
+          "type": "array",
+          "description": "References to individual InterviewQuestion entries categorized as behavioral. (Relationship: InterviewPrep 1:N InterviewQuestion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "technicalQuestionIds": {
+          "type": "array",
+          "description": "References to individual InterviewQuestion entries categorized as technical. (Relationship: InterviewPrep 1:N InterviewQuestion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "roleFitQuestionIds": {
+          "type": "array",
+          "description": "References to individual InterviewQuestion entries categorized as role-fit. (Relationship: InterviewPrep 1:N InterviewQuestion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the interview preparation materials were generated.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the interview prep record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the interview prep record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "jobId",
+        "generatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InterviewQuestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InterviewQuestion",
+      "type": "object",
+      "description": "Represents a single AI-generated interview question with guidance.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the InterviewQuestion entity."
+        },
+        "interviewPrepId": {
+          "type": "string",
+          "description": "Reference to the InterviewPrep entity this question belongs to. (Relationship: InterviewPrep 1:N InterviewQuestion)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The category of the interview question (behavioral, technical, role-fit).",
+          "format": "enum"
+        },
+        "questionText": {
+          "type": "string",
+          "description": "The text of the interview question."
+        },
+        "guidanceBullets": {
+          "type": "array",
+          "description": "A list of bullet points providing guidance on how to answer the question.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the question record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the question record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "interviewPrepId",
+        "type",
+        "questionText",
+        "guidanceBullets",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Reminder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Reminder",
+      "type": "object",
+      "description": "Manages user-specific reminders for job applications and other tasks.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Reminder entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who set this reminder. (Relationship: User 1:N Reminder)"
+        },
+        "userSavedJobId": {
+          "type": "string",
+          "description": "Optional reference to the UserSavedJob if this reminder is job-specific. (Relationship: UserSavedJob 1:N Reminder)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of reminder (e.g., follow-up, interview, profile-completeness, general).",
+          "format": "enum"
+        },
+        "message": {
+          "type": "string",
+          "description": "The text content of the reminder."
+        },
+        "remindAt": {
+          "type": "string",
+          "description": "The date and time when the reminder should trigger.",
+          "format": "date-time"
+        },
+        "isDismissed": {
+          "type": "boolean",
+          "description": "Flag indicating if the user has dismissed or completed this reminder."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the reminder was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the reminder record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "message",
+        "remindAt",
+        "isDismissed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LearningRecommendation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LearningRecommendation",
+      "type": "object",
+      "description": "Stores AI-generated recommendations for skills to learn and associated learning resources.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LearningRecommendation entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom these recommendations were generated. (Relationship: User 1:N LearningRecommendation)"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Optional reference to the Job for which these recommendations were made (e.g., based on missing skills for that job). (Relationship: Job 1:N LearningRecommendation)"
+        },
+        "missingSkills": {
+          "type": "array",
+          "description": "A list of skills identified as missing from the user's profile for a specific context.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendedSkillIds": {
+          "type": "array",
+          "description": "References to individual RecommendedSkill entries. (Relationship: LearningRecommendation 1:N RecommendedSkill)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resourceIds": {
+          "type": "array",
+          "description": "References to individual LearningResource entries. (Relationship: LearningRecommendation 1:N LearningResource)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the learning recommendations were generated.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the recommendation record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the recommendation record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "missingSkills",
+        "generatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RecommendedSkill": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RecommendedSkill",
+      "type": "object",
+      "description": "Represents a single skill recommended for learning, potentially with a priority.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RecommendedSkill entity."
+        },
+        "learningRecommendationId": {
+          "type": "string",
+          "description": "Reference to the LearningRecommendation this skill belongs to. (Relationship: LearningRecommendation 1:N RecommendedSkill)"
+        },
+        "skillName": {
+          "type": "string",
+          "description": "The name of the recommended skill."
+        },
+        "priority": {
+          "type": "number",
+          "description": "A numerical value indicating the importance or priority of learning this skill (e.g., 1 for high priority)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the skill recommendation record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the skill recommendation record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "learningRecommendationId",
+        "skillName",
+        "priority",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LearningResource": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LearningResource",
+      "type": "object",
+      "description": "Represents a single learning resource suggested for skill development.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LearningResource entity."
+        },
+        "learningRecommendationId": {
+          "type": "string",
+          "description": "Reference to the LearningRecommendation this resource belongs to. (Relationship: LearningRecommendation 1:N LearningResource)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the learning resource."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to access the learning resource.",
+          "format": "uri"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of resource (e.g., free, paid, certification, article, video).",
+          "format": "enum"
+        },
+        "isAffiliate": {
+          "type": "boolean",
+          "description": "Flag indicating if the URL is an affiliate link."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the learning resource."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the resource record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the resource record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "learningRecommendationId",
+        "title",
+        "url",
+        "type",
+        "isAffiliate",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatSession",
+      "type": "object",
+      "description": "Stores the context and metadata for a chat conversation with the AI career assistant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChatSession entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who initiated this chat session. (Relationship: User 1:N ChatSession)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp when the chat session started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp when the chat session ended (optional, if still active).",
+          "format": "date-time"
+        },
+        "contextJobId": {
+          "type": "string",
+          "description": "Optional reference to a Job if the chat is specific to a job application. (Relationship: Job 1:N ChatSession)"
+        },
+        "contextResumeId": {
+          "type": "string",
+          "description": "Optional reference to a Resume if the chat involves resume-specific context. (Relationship: Resume 1:N ChatSession)"
+        },
+        "messageIds": {
+          "type": "array",
+          "description": "References to individual ChatMessage entries within this session. (Relationship: ChatSession 1:N ChatMessage)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the chat session record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the chat session record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startTime",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message within an AI career assistant chat session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChatMessage entity."
+        },
+        "chatSessionId": {
+          "type": "string",
+          "description": "Reference to the ChatSession this message belongs to. (Relationship: ChatSession 1:N ChatMessage)"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the sender (e.g., user, assistant).",
+          "format": "enum"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp when the message was sent.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the message record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the message record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "chatSessionId",
+        "role",
+        "content",
+        "timestamp",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Stores details about notifications sent to the user (e.g., push notifications, in-app messages).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Notification entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User to whom this notification was sent. (Relationship: User 1:N Notification)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of notification (e.g., job-reminder, follow-up, interview-reminder, profile-completeness, saved-jobs-not-applied).",
+          "format": "enum"
+        },
+        "message": {
+          "type": "string",
+          "description": "The message content of the notification."
+        },
+        "sentAt": {
+          "type": "string",
+          "description": "Timestamp when the notification was sent.",
+          "format": "date-time"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Flag indicating if the user has read or viewed the notification."
+        },
+        "targetUrl": {
+          "type": "string",
+          "description": "An optional URL within the app to navigate to when the notification is tapped/clicked.",
+          "format": "uri"
+        },
+        "relatedEntityId": {
+          "type": "string",
+          "description": "Optional reference to a related entity (e.g., ReminderId, UserSavedJobId) that triggered this notification."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the notification record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the notification record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "message",
+        "sentAt",
+        "isRead",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FeatureFlag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FeatureFlag",
+      "type": "object",
+      "description": "Manages global feature flags for controlling application behavior and feature visibility.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FeatureFlag entity, typically the programmatic name of the flag."
+        },
+        "name": {
+          "type": "string",
+          "description": "A human-readable name for the feature flag."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what the feature flag controls."
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "description": "Boolean value indicating if the feature is enabled (true) or disabled (false)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the feature flag's status.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "isEnabled",
+        "updatedAt"
+      ]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Records important system or user actions for security, debugging, and operational insights.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AuditLog entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Optional reference to the User who performed the action, if applicable. (Relationship: User 1:N AuditLog)"
+        },
+        "action": {
+          "type": "string",
+          "description": "Description of the action performed (e.g., 'job_imported', 'profile_updated')."
+        },
+        "entityType": {
+          "type": "string",
+          "description": "The type of entity affected by the action (e.g., 'Job', 'UserProfile')."
+        },
+        "entityId": {
+          "type": "string",
+          "description": "The unique identifier of the entity affected by the action."
+        },
+        "details": {
+          "type": "string",
+          "description": "Additional arbitrary JSON details about the action (e.g., '{\"field\":\"oldValue->newValue\"}') represented as a string."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp when the action occurred.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the audit log record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last update to the audit log record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "timestamp",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "user",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Top-level collection for user accounts. Access is restricted to the owning user identified by `{userId}` matching `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "userProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores detailed profile information for a specific user. This is a subcollection with a singular document ('profile') directly under the user's path. Authorization is by parent path: `{userId}` matching `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}",
+        "definition": {
+          "entityName": "resume",
+          "schema": {
+            "$ref": "#/backend/entities/Resume"
+          },
+          "description": "Collection for user-uploaded resume metadata. Access is restricted to the owning user. Includes denormalized 'userId' for querying flexibility, though primary authorization is via the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for a specific resume document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}/parsedResumeData",
+        "definition": {
+          "entityName": "parsedResumeData",
+          "schema": {
+            "$ref": "#/backend/entities/ParsedResumeData"
+          },
+          "description": "Stores the AI-parsed structured data from a specific resume. This is a subcollection with a singular document ('parsedResumeData') directly under the resume's path. Includes denormalized 'userId' for querying, and 'resumeId' for consistency. Authorization is via the parent path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the parent resume document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}/parsedResumeData/experiences/{experienceId}",
+        "definition": {
+          "entityName": "parsedResumeExperience",
+          "schema": {
+            "$ref": "#/backend/entities/ParsedResumeExperience"
+          },
+          "description": "Collection for individual work experience entries parsed from a resume. Authorization is inherited from the parent `parsedResumeData` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the parent resume document."
+            },
+            {
+              "name": "experienceId",
+              "description": "The unique identifier for a specific parsed experience entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}/parsedResumeData/educations/{educationId}",
+        "definition": {
+          "entityName": "parsedResumeEducation",
+          "schema": {
+            "$ref": "#/backend/entities/ParsedResumeEducation"
+          },
+          "description": "Collection for individual education entries parsed from a resume. Authorization is inherited from the parent `parsedResumeData` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the parent resume document."
+            },
+            {
+              "name": "educationId",
+              "description": "The unique identifier for a specific parsed education entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}/parsedResumeData/certifications/{certificationId}",
+        "definition": {
+          "entityName": "parsedResumeCertification",
+          "schema": {
+            "$ref": "#/backend/entities/ParsedResumeCertification"
+          },
+          "description": "Collection for individual certification entries parsed from a resume. Authorization is inherited from the parent `parsedResumeData` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the parent resume document."
+            },
+            {
+              "name": "certificationId",
+              "description": "The unique identifier for a specific parsed certification entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}/parsedResumeData/projects/{projectId}",
+        "definition": {
+          "entityName": "parsedResumeProject",
+          "schema": {
+            "$ref": "#/backend/entities/ParsedResumeProject"
+          },
+          "description": "Collection for individual project entries parsed from a resume. Authorization is inherited from the parent `parsedResumeData` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the parent resume document."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier for a specific parsed project entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/jobs/{jobId}",
+        "definition": {
+          "entityName": "job",
+          "schema": {
+            "$ref": "#/backend/entities/Job"
+          },
+          "description": "Collection for job postings imported by a user. Access is restricted to the owning user. Includes denormalized 'userId' for querying flexibility, though primary authorization is via the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "jobId",
+              "description": "The unique identifier for a specific job document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/savedJobs/{userSavedJobId}",
+        "definition": {
+          "entityName": "userSavedJob",
+          "schema": {
+            "$ref": "#/backend/entities/UserSavedJob"
+          },
+          "description": "Collection for user-specific tracking details of saved jobs. Access is restricted to the owning user. Includes denormalized 'userId' and 'jobId' for querying flexibility and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "userSavedJobId",
+              "description": "The unique identifier for a specific saved job entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/jobAnalyses/{jobAnalysisId}",
+        "definition": {
+          "entityName": "jobAnalysis",
+          "schema": {
+            "$ref": "#/backend/entities/JobAnalysis"
+          },
+          "description": "Collection for AI analysis results of a job against a user's profile/resume. Access is restricted to the owning user. Includes denormalized 'userId', 'jobId', and 'resumeId' for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "jobAnalysisId",
+              "description": "The unique identifier for a specific job analysis record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumeOptimizations/{resumeOptimizationId}",
+        "definition": {
+          "entityName": "resumeOptimization",
+          "schema": {
+            "$ref": "#/backend/entities/ResumeOptimization"
+          },
+          "description": "Collection for AI-generated resume optimization suggestions for a specific job. Access is restricted to the owning user. Includes denormalized 'userId', 'jobId', and 'originalResumeId' for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeOptimizationId",
+              "description": "The unique identifier for a specific resume optimization record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumeOptimizations/{resumeOptimizationId}/revisedBulletSuggestions/{bulletSuggestionId}",
+        "definition": {
+          "entityName": "revisedBulletSuggestion",
+          "schema": {
+            "$ref": "#/backend/entities/RevisedBulletSuggestion"
+          },
+          "description": "Collection for AI-generated suggestions for individual resume bullet points. Authorization is inherited from the parent `resumeOptimization` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "resumeOptimizationId",
+              "description": "The unique identifier for the parent resume optimization record."
+            },
+            {
+              "name": "bulletSuggestionId",
+              "description": "The unique identifier for a specific bullet point suggestion."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/coverLetters/{coverLetterId}",
+        "definition": {
+          "entityName": "coverLetter",
+          "schema": {
+            "$ref": "#/backend/entities/CoverLetter"
+          },
+          "description": "Collection for AI-generated cover letters tailored for specific jobs. Access is restricted to the owning user. Includes denormalized 'userId' and 'jobId' for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "coverLetterId",
+              "description": "The unique identifier for a specific cover letter record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interviewPreps/{interviewPrepId}",
+        "definition": {
+          "entityName": "interviewPrep",
+          "schema": {
+            "$ref": "#/backend/entities/InterviewPrep"
+          },
+          "description": "Collection for AI-generated interview preparation materials for specific jobs. Access is restricted to the owning user. Includes denormalized 'userId' and 'jobId' for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "interviewPrepId",
+              "description": "The unique identifier for a specific interview preparation record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interviewPreps/{interviewPrepId}/questions/{questionId}",
+        "definition": {
+          "entityName": "interviewQuestion",
+          "schema": {
+            "$ref": "#/backend/entities/InterviewQuestion"
+          },
+          "description": "Collection for individual AI-generated interview questions and guidance. Authorization is inherited from the parent `interviewPrep` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "interviewPrepId",
+              "description": "The unique identifier for the parent interview preparation record."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier for a specific interview question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/reminders/{reminderId}",
+        "definition": {
+          "entityName": "reminder",
+          "schema": {
+            "$ref": "#/backend/entities/Reminder"
+          },
+          "description": "Collection for user-specific reminders related to job applications or other tasks. Access is restricted to the owning user. Includes denormalized 'userId' and 'userSavedJobId' (optional) for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "reminderId",
+              "description": "The unique identifier for a specific reminder record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/learningRecommendations/{recommendationId}",
+        "definition": {
+          "entityName": "learningRecommendation",
+          "schema": {
+            "$ref": "#/backend/entities/LearningRecommendation"
+          },
+          "description": "Collection for AI-generated learning recommendations. Access is restricted to the owning user. Includes denormalized 'userId' and 'jobId' (optional) for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier for a specific learning recommendation record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/learningRecommendations/{recommendationId}/recommendedSkills/{skillId}",
+        "definition": {
+          "entityName": "recommendedSkill",
+          "schema": {
+            "$ref": "#/backend/entities/RecommendedSkill"
+          },
+          "description": "Collection for individual skills recommended for learning. Authorization is inherited from the parent `learningRecommendation` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier for the parent learning recommendation record."
+            },
+            {
+              "name": "skillId",
+              "description": "The unique identifier for a specific recommended skill."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/learningRecommendations/{recommendationId}/learningResources/{resourceId}",
+        "definition": {
+          "entityName": "learningResource",
+          "schema": {
+            "$ref": "#/backend/entities/LearningResource"
+          },
+          "description": "Collection for individual learning resources suggested for skill development. Authorization is inherited from the parent `learningRecommendation` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier for the parent learning recommendation record."
+            },
+            {
+              "name": "resourceId",
+              "description": "The unique identifier for a specific learning resource."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chatSessions/{chatSessionId}",
+        "definition": {
+          "entityName": "chatSession",
+          "schema": {
+            "$ref": "#/backend/entities/ChatSession"
+          },
+          "description": "Collection for AI career assistant chat sessions. Access is restricted to the owning user. Includes denormalized 'userId', 'contextJobId' (optional), and 'contextResumeId' (optional) for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "chatSessionId",
+              "description": "The unique identifier for a specific chat session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chatSessions/{chatSessionId}/messages/{messageId}",
+        "definition": {
+          "entityName": "chatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Collection for individual messages within a chat session. Authorization is inherited from the parent `chatSession` path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "chatSessionId",
+              "description": "The unique identifier for the parent chat session."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for a specific chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Collection for user-specific notifications. Access is restricted to the owning user. Includes denormalized 'userId' and 'relatedEntityId' (optional) for querying and authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to `request.auth.uid`."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for a specific notification record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/featureFlags/{flagId}",
+        "definition": {
+          "entityName": "featureFlag",
+          "schema": {
+            "$ref": "#/backend/entities/FeatureFlag"
+          },
+          "description": "Top-level collection for global feature flags. Designed for application-wide settings and feature toggling. Read access can be public or restricted to authenticated users; write access is typically restricted to administrators (not defined by user path).",
+          "params": [
+            {
+              "name": "flagId",
+              "description": "The unique identifier for a specific feature flag (e.g., 'newDashboardEnabled')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/auditLogs/{logId}",
+        "definition": {
+          "entityName": "auditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Top-level collection for system-generated audit logs. Access is typically restricted to internal system processes (writes) and administrators (reads). Includes 'userId' (optional) for reference, not authorization on the log itself.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for a specific audit log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure for CareerPilot AI prioritizes secure, scalable, and debuggable access by strictly adhering to the core design principles and strategy mandates. The fundamental approach is a hierarchical, user-centric data model, where almost all user-specific data resides within a top-level `/users/{userId}` document subtree.\n\n**Authorization Independence (CRITICAL):** This structure achieves authorization independence by embedding the user's unique ID (`userId`) directly into the Firestore path for all user-owned data. For example, `/users/{userId}/resumes/{resumeId}` ensures that `request.auth.uid` can be directly compared against the `{userId}` wildcard in Firestore security rules. This eliminates the need for expensive and potentially complex `get()` calls to parent documents to determine ownership or permissions. For top-level user subcollections (e.g., `/users/{userId}/jobs`, `/users/{userId}/savedJobs`), the `userId` is also redundantly stored as a field within the document itself. While the path provides primary authorization for rules, this explicit `userId` field aids in collection group queries and strengthens data consistency and debuggability without compromising authorization independence.\n\n**QAPs (Rules are not Filters):** Secure `list` operations are inherently supported by the path-based ownership model. When a user queries for their data (e.g., all their jobs or saved jobs), the query path will always begin with `/users/{request.auth.uid}/`. Firestore security rules will match this path, automatically restricting the results to only the current user's data. This ensures that security rules act as enforcers, not filters, and that client-side queries will only ever retrieve authorized data. Structural segregation further enhances QAPs; each subcollection under a user's path (e.g., `resumes`, `jobs`, `savedJobs`) maintains a homogeneous security posture (owner-only access), simplifying rules and preventing accidental data exposure.\n\n**Structural Segregation & Access Modeling:** All user-specific data maintains a 'Private Data' access model, where only the owning user can access their documents. Global configuration, such as `featureFlags`, is placed in a separate top-level collection (`/featureFlags`) with distinct, broader read permissions, clearly segregating data with different security requirements. This avoids mixing public/private data within the same collection. The use of hierarchical paths for `1:N` relationships (e.g., `/users/{userId}/resumes/{resumeId}/parsedResumeData/experiences/{experienceId}`) consistently applies ownership down the chain.\n\n**Data Clarity & Predictability:** Consistent semantic naming for collections and wildcards (e.g., `{userId}`, `{jobId}`) is enforced. Explicit status fields (e.g., `isPrimary`, `status`, `isDismissed`) are used to model states clearly. Timestamps (`createdAt`, `updatedAt`) are included in all entities for auditing and data freshness. Dynamic keys are avoided, promoting a predictable schema."
+  }
+}

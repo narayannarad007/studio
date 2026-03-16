@@ -1,0 +1,429 @@
+/**
+ * # Firestore Security Rules
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a strict user-ownership model. All user-generated data is stored
+ * in subcollections under that user's unique document ID (`/users/{userId}`). Access to
+ * any document within this structure is granted only to the authenticated user whose UID
+ * matches the `{userId}` in the path. This creates strong, scalable security boundaries
+ * between users.
+ *
+ * ## Data Structure
+ * The data is organized hierarchically:
+ * - `/users/{userId}`: The root for all data belonging to a single user.
+ * - `/users/{userId}/{subcollection}/{docId}`: All user-specific content, such as profiles,
+ *   resumes, jobs, and chat sessions, are stored in dedicated subcollections. This isolates
+ *   data and allows for granular, path-based security.
+ * - `/featureFlags/{flagId}`: A top-level collection for application-wide configuration.
+ *   This data is publicly readable but cannot be modified by clients.
+ * - `/auditLogs/{logId}`: A top-level collection for system-internal logging. It is completely
+ *   inaccessible to all clients.
+ *
+ * ## Key Security Decisions
+ * - **Default Deny**: All paths are closed by default. Access is only granted through explicit
+ *   `allow` statements.
+ * - **No User Listing**: The top-level `/users` collection cannot be listed, preventing any
+ *   user from discovering other users in the system.
+ * - **Path-Based Authorization**: Rules primarily rely on the `{userId}` wildcard in the
+ *   document path to verify ownership, which is highly performant.
+ * - **Denormalization for Authorization**: To ensure rules are fast and efficient, critical
+ *   ownership information (like `userId`) is denormalized onto documents. This avoids slow
+ *   and costly `get()` calls to parent documents for authorization checks.
+ * - **Strictly Private Data**: All data under `/users/{userId}` is considered private to that
+ *   user. There are no collaborative or shared data models in this ruleset.
+ *
+* ## Prototyping Mode
+ * These rules are designed for rapid development. Authorization is strictly enforced (who can
+ * access what), but data schemas are not. The rules will validate fields critical for
+ * security and relational integrity (like `userId`) but will not validate the shape or type
+ * of other content fields (like `fullName` or `description`), allowing the data model to
+ * evolve without continuous rule updates.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions for authentication and ownership.
+    // These functions centralize common logic for cleaner, more readable rules.
+
+    /**
+     * Checks if the current request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the requesting user's UID matches the document's owner ID from the path.
+     * @param userId The user ID from the path wildcard.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document.
+     * Ensures that update/delete operations only affect documents that already exist.
+     * @param userId The user ID from the path wildcard.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages user account documents. A user can create their own account
+     *              document and can read/update/delete it, but they cannot see other
+     *              users' documents.
+     * @path /users/{userId}
+     * @allow (create) A new user with UID 'user_abc' creating their own document at /users/user_abc.
+     * @deny (list) Any user trying to list all documents in the /users collection.
+     * @principle Enforces Self-Creation and strict document ownership.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for security.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages a user's singular profile document. Only the owner can manage it.
+       * @path /users/{userId}/profile/{profileId}
+       * @allow (create) User 'user_abc' creating their profile document.
+       * @deny (get) User 'user_xyz' trying to read the profile of 'user_abc'.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /profile/{profileId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages a user's resume metadata documents.
+       * @path /users/{userId}/resumes/{resumeId}
+       * @allow (create) User 'user_abc' adding a new resume.
+       * @deny (update) User 'user_xyz' trying to modify a resume belonging to 'user_abc'.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /resumes/{resumeId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages the AI-parsed data extracted from a resume.
+         * @path /users/{userId}/resumes/{resumeId}/parsedResumeData/{parsedDataId}
+         * @allow (create) User 'user_abc' creating parsed data for their resume 'resume_123'.
+         * @deny (get) User 'user_xyz' trying to read parsed data from any resume.
+         * @principle Inherits ownership from parent path and validates relational integrity.
+         */
+        match /parsedResumeData/{parsedDataId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.resumeId == resumeId;
+          allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId && request.resource.data.resumeId == resource.data.resumeId;
+          allow delete: if isExistingOwner(userId);
+
+          /**
+           * @description Manages parsed work experience entries.
+           * @path /users/{userId}/resumes/{resumeId}/parsedResumeData/{parsedDataId}/experiences/{experienceId}
+           * @allow (create) User 'user_abc' creating an experience entry under their parsed resume data.
+           * @deny (delete) User 'user_xyz' trying to delete an experience entry.
+           * @principle Inherits ownership from the top-level user path.
+           */
+          match /experiences/{experienceId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && request.resource.data.parsedResumeDataId == parsedDataId;
+            allow update: if isExistingOwner(userId) && request.resource.data.parsedResumeDataId == resource.data.parsedResumeDataId;
+            allow delete: if isExistingOwner(userId);
+          }
+
+          /**
+           * @description Manages parsed education entries.
+           * @path /users/{userId}/resumes/{resumeId}/parsedResumeData/{parsedDataId}/educations/{educationId}
+           * @allow (read) User 'user_abc' reading their own education entries.
+           * @deny (read) Any other user attempting to read these entries.
+           * @principle Inherits ownership from the top-level user path.
+           */
+          match /educations/{educationId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && request.resource.data.parsedResumeDataId == parsedDataId;
+            allow update: if isExistingOwner(userId) && request.resource.data.parsedResumeDataId == resource.data.parsedResumeDataId;
+            allow delete: if isExistingOwner(userId);
+          }
+
+          /**
+           * @description Manages parsed certification entries.
+           * @path /users/{userId}/resumes/{resumeId}/parsedResumeData/{parsedDataId}/certifications/{certificationId}
+           * @allow (read) User 'user_abc' reading their own certification entries.
+           * @deny (read) Any other user attempting to read these entries.
+           * @principle Inherits ownership from the top-level user path.
+           */
+          match /certifications/{certificationId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && request.resource.data.parsedResumeDataId == parsedDataId;
+            allow update: if isExistingOwner(userId) && request.resource.data.parsedResumeDataId == resource.data.parsedResumeDataId;
+            allow delete: if isExistingOwner(userId);
+          }
+
+          /**
+           * @description Manages parsed project entries.
+           * @path /users/{userId}/resumes/{resumeId}/parsedResumeData/{parsedDataId}/projects/{projectId}
+           * @allow (read) User 'user_abc' reading their own project entries.
+           * @deny (read) Any other user attempting to read these entries.
+           * @principle Inherits ownership from the top-level user path.
+           */
+          match /projects/{projectId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && request.resource.data.parsedResumeDataId == parsedDataId;
+            allow update: if isExistingOwner(userId) && request.resource.data.parsedResumeDataId == resource.data.parsedResumeDataId;
+            allow delete: if isExistingOwner(userId);
+          }
+        }
+      }
+
+      /**
+       * @description Manages job postings imported by a user.
+       * @path /users/{userId}/jobs/{jobId}
+       * @allow (create) User 'user_abc' importing a new job.
+       * @deny (get) User 'user_xyz' trying to access a job imported by 'user_abc'.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /jobs/{jobId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages the tracking status of jobs a user has saved.
+       * @path /users/{userId}/savedJobs/{userSavedJobId}
+       * @allow (update) User 'user_abc' updating the status of one of their saved jobs.
+       * @deny (create) User 'user_xyz' trying to save a job on behalf of 'user_abc'.
+       * @principle Enforces document ownership and validates relational integrity.
+       */
+      match /savedJobs/{userSavedJobId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Stores AI analysis results for a job.
+       * @path /users/{userId}/jobAnalyses/{jobAnalysisId}
+       * @allow (get) User 'user_abc' retrieving an analysis they generated.
+       * @deny (get) Any other user trying to access this sensitive analysis data.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /jobAnalyses/{jobAnalysisId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Stores AI-generated suggestions for resume optimization.
+       * @path /users/{userId}/resumeOptimizations/{resumeOptimizationId}
+       * @allow (read) User 'user_abc' reading their own resume optimizations.
+       * @deny (read) Any other user attempting to read these optimizations.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /resumeOptimizations/{resumeOptimizationId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages suggestions for improving individual resume bullet points.
+         * @path /users/{userId}/resumeOptimizations/{resumeOptimizationId}/revisedBulletSuggestions/{bulletSuggestionId}
+         * @allow (create) User 'user_abc' creating a bullet suggestion.
+         * @deny (update) User 'user_xyz' modifying a suggestion.
+         * @principle Inherits ownership from the top-level user path.
+         */
+        match /revisedBulletSuggestions/{bulletSuggestionId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.resumeOptimizationId == resumeOptimizationId;
+          allow update: if isExistingOwner(userId) && request.resource.data.resumeOptimizationId == resource.data.resumeOptimizationId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Manages AI-generated cover letters for specific jobs.
+       * @path /users/{userId}/coverLetters/{coverLetterId}
+       * @allow (read) User 'user_abc' reading their own generated cover letters.
+       * @deny (delete) User 'user_xyz' trying to delete a cover letter.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /coverLetters/{coverLetterId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages AI-generated interview preparation materials.
+       * @path /users/{userId}/interviewPreps/{interviewPrepId}
+       * @allow (read) User 'user_abc' reading their interview prep materials.
+       * @deny (read) Any other user accessing these materials.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /interviewPreps/{interviewPrepId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages individual interview questions within a prep session.
+         * @path /users/{userId}/interviewPreps/{interviewPrepId}/questions/{questionId}
+         * @allow (create) User 'user_abc' creating an interview question.
+         * @deny (update) User 'user_xyz' modifying a question.
+         * @principle Inherits ownership from the top-level user path.
+         */
+        match /questions/{questionId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.interviewPrepId == interviewPrepId;
+          allow update: if isExistingOwner(userId) && request.resource.data.interviewPrepId == resource.data.interviewPrepId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Manages user-specific reminders for jobs and tasks.
+       * @path /users/{userId}/reminders/{reminderId}
+       * @allow (read) User 'user_abc' reading their own reminders.
+       * @deny (read) Any other user accessing these reminders.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /reminders/{reminderId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages AI-generated learning recommendations.
+       * @path /users/{userId}/learningRecommendations/{recommendationId}
+       * @allow (read) User 'user_abc' reading their own learning recommendations.
+       * @deny (read) Any other user accessing these recommendations.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /learningRecommendations/{recommendationId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages individual skills recommended for learning.
+         * @path /users/{userId}/learningRecommendations/{recommendationId}/recommendedSkills/{skillId}
+         * @allow (create) User 'user_abc' creating a recommended skill entry.
+         * @deny (update) User 'user_xyz' modifying a skill entry.
+         * @principle Inherits ownership from the top-level user path.
+         */
+        match /recommendedSkills/{skillId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.learningRecommendationId == recommendationId;
+          allow update: if isExistingOwner(userId) && request.resource.data.learningRecommendationId == resource.data.learningRecommendationId;
+          allow delete: if isExistingOwner(userId);
+        }
+
+        /**
+         * @description Manages individual learning resources.
+         * @path /users/{userId}/learningRecommendations/{recommendationId}/learningResources/{resourceId}
+         * @allow (create) User 'user_abc' creating a learning resource entry.
+         * @deny (update) User 'user_xyz' modifying a resource entry.
+         * @principle Inherits ownership from the top-level user path.
+         */
+        match /learningResources/{resourceId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.learningRecommendationId == recommendationId;
+          allow update: if isExistingOwner(userId) && request.resource.data.learningRecommendationId == resource.data.learningRecommendationId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Manages chat sessions with the AI career assistant.
+       * @path /users/{userId}/chatSessions/{chatSessionId}
+       * @allow (read) User 'user_abc' reading their own chat sessions.
+       * @deny (read) Any other user accessing these chat sessions.
+       * @principle Enforces document ownership for all operations.
+       */
+      match /chatSessions/{chatSessionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages individual messages within a chat session.
+         * @path /users/{userId}/chatSessions/{chatSessionId}/messages/{messageId}
+         * @allow (create) User 'user_abc' sending a message in their own chat session.
+         * @deny (create) User 'user_xyz' trying to inject a message into another user's chat.
+         * @principle Inherits ownership and validates relational integrity.
+         */
+        match /messages/{messageId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.chatSessionId == chatSessionId;
+          allow update: if isExistingOwner(userId) && request.resource.data.chatSessionId == resource.data.chatSessionId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Manages notifications sent to a user.
+       * @path /users/{userId}/notifications/{notificationId}
+       * @allow (read, update) User 'user_abc' reading and marking their own notifications as read.
+       * @deny (create, delete) Users cannot create or delete their own notifications.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId);
+        allow create: if false; // Notifications are system-generated.
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if false; // Users cannot delete notifications.
+      }
+    }
+
+    /**
+     * @description Manages global feature flags. This data is public for all clients
+     *              to read but cannot be modified by any client.
+     * @path /featureFlags/{flagId}
+     * @allow (get, list) Any user, signed in or not, can read the feature flags.
+     * @deny (create, update, delete) All client-side writes are forbidden.
+     * @principle Provides public read access for configuration with admin-only writes.
+     */
+    match /featureFlags/{flagId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Stores system-generated audit logs. This collection is completely
+     *              locked down from all client access.
+     * @path /auditLogs/{logId}
+     * @allow (none) No client can read, list, create, update, or delete audit logs.
+     * @deny (all) All operations are forbidden for maximum security.
+     * @principle Secures sensitive system data by denying all client-side access.
+     */
+    match /auditLogs/{logId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
