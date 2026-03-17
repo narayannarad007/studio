@@ -1,7 +1,7 @@
 # Firebase Studio - CareerPilot AI
 
 This is a Next.js starter project for CareerPilot AI, built with Firebase Studio.
-
+ 
 ## Getting Started
 
 To get the application running locally, follow these steps:
