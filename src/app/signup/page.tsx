@@ -1,7 +1,6 @@
 'use client';
 import Link from "next/link"
 import { Rocket } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -13,8 +12,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react";
-import { useAuth, initiateEmailSignUp } from "@/firebase";
+import { useAuth, setDocumentNonBlocking } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, serverTimestamp } from "firebase/firestore";
+import { getApp } from "firebase/app";
 
 
 export default function SignupPage() {
@@ -24,7 +26,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName) {
       toast({
@@ -34,13 +36,53 @@ export default function SignupPage() {
       });
       return;
     }
-    initiateEmailSignUp(auth, email, password);
-    // Here you would typically also create a user profile document in Firestore
-    // with the full name after successful signup.
-     toast({
+    
+    try {
+      toast({
         title: "Creating account...",
-        description: "You will be redirected shortly.",
+        description: "Please wait while we set things up for you.",
       });
+
+      // 1. Create user in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Create the user profile document in Firestore
+      const firestore = getFirestore(getApp());
+      // The path follows the structure defined in firestore.rules: /users/{userId}/profile/{profileId}
+      // We use a static ID for the singular profile document.
+      const profileDocRef = doc(firestore, 'users', user.uid, 'profile', 'main-profile');
+      
+      const newProfile = {
+        id: profileDocRef.id,
+        userId: user.uid,
+        fullName: fullName,
+        email: user.email,
+        yearsOfExperience: 0,
+        currentOrLastJobTitle: "",
+        keySkills: [],
+        workModePreference: "remote", // Default value
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      
+      // 3. Save the document non-blockingly
+      setDocumentNonBlocking(profileDocRef, newProfile, { merge: false });
+
+      toast({
+        title: "Account Created!",
+        description: "Welcome to CareerPilot AI. You will be redirected.",
+      });
+      // The user will be automatically redirected to the dashboard by the
+      // onAuthStateChanged listener in the Firebase provider.
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: error.message || "An unexpected error occurred. Please try again.",
+      });
+    }
   };
 
   return (
