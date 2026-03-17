@@ -1,9 +1,14 @@
+'use client';
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, ExternalLink, Wand2, XCircle } from "lucide-react";
+import { Bookmark, CheckCircle, ExternalLink, Wand2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useUser, useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 const analysis = {
   job: {
@@ -18,6 +23,54 @@ const analysis = {
 };
 
 export default function JobAnalysisPage({ params }: { params: { jobId: string }}) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const handleSaveJob = () => {
+    if (!user || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Not logged in",
+        description: "You must be logged in to save a job.",
+      });
+      return;
+    }
+
+    const savedJobsCollectionRef = collection(firestore, 'users', user.uid, 'savedJobs');
+    
+    const newSavedJob = {
+      userId: user.uid,
+      jobId: params.jobId,
+      status: "Saved",
+      followUpFlag: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      notes: "",
+      // These fields can be populated later
+      appliedDate: null, 
+      reminderDate: null,
+    };
+
+    // Use the non-blocking function to add the document
+    addDocumentNonBlocking(savedJobsCollectionRef, newSavedJob)
+      .then(() => {
+        toast({
+          title: "Job Saved!",
+          description: `${analysis.job.title} has been added to your tracker.`,
+        });
+      })
+      .catch(() => {
+        // The permission error is handled globally by the FirestorePermissionError emitter.
+        // This catch is for other potential issues, though less likely.
+        toast({
+          variant: "destructive",
+          title: "Uh oh!",
+          description: "Could not save the job. Please try again.",
+        });
+      });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -50,7 +103,11 @@ export default function JobAnalysisPage({ params }: { params: { jobId: string }}
             <CardDescription>AI-recommended actions for this job.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Button>
+             <Button onClick={handleSaveJob}>
+              <Bookmark className="mr-2" />
+              Save to Tracker
+            </Button>
+            <Button variant="secondary">
               <Wand2 className="mr-2" />
               Generate Cover Letter
             </Button>
