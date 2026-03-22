@@ -1,5 +1,6 @@
 'use client';
 import Link from "next/link"
+import { useRouter } from "next/navigation";
 import { Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,20 +12,31 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react";
-import { useAuth } from "@/firebase";
+import { useState, useEffect } from "react";
+import { useAuth, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getFirestore, doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
 import { getApp } from "firebase/app";
 
 
 export default function SignupPage() {
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const { toast } = useToast();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect to dashboard if user is already logged in
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,56 +49,119 @@ export default function SignupPage() {
       return;
     }
     
+    setIsLoading(true);
+    
     try {
-      toast({
-        title: "Creating account...",
-        description: "Please wait while we set things up for you.",
-      });
-
       // 1. Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const newUser = userCredential.user;
 
       // 2. Create the user profile document in Firestore
       const firestore = getFirestore(getApp());
-      // The path follows the structure defined in firestore.rules: /users/{userId}/profile/{profileId}
-      // We use a static ID for the singular profile document.
-      const profileDocRef = doc(firestore, 'users', user.uid, 'profile', 'main-profile');
+      const profileDocRef = doc(firestore, 'users', newUser.uid, 'profile', 'main-profile');
       
       const newProfile = {
         id: profileDocRef.id,
-        userId: user.uid,
+        userId: newUser.uid,
         fullName: fullName,
-        email: user.email,
+        email: newUser.email,
         yearsOfExperience: 0,
         currentOrLastJobTitle: "",
         keySkills: [],
-        workModePreference: "remote", // Default value
+        workModePreference: "remote",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        profileCompletenessScore: 20 // Starter score
+        profileCompletenessScore: 20
       };
       
-      // 3. Save the document BLOCKINGLY to ensure it's created before proceeding.
-      // This is a critical step, so we await it to ensure it completes.
+      // 3. Save the document
       await setDoc(profileDocRef, newProfile);
 
       toast({
         title: "Account Created!",
         description: "Welcome to CareerPilot AI. You will be redirected.",
       });
-      // The user will be automatically redirected to the dashboard by the
-      // onAuthStateChanged listener in the Firebase provider.
+      // Redirection is handled by the useEffect hook
 
     } catch (error: any) {
-      // This will catch errors from both createUserWithEmailAndPassword and setDoc
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code) {
+          switch (error.code) {
+              case 'auth/email-already-in-use':
+                  description = "An account with this email address already exists. Please login instead.";
+                  break;
+              case 'auth/weak-password':
+                  description = "The password is too weak. It must be at least 6 characters long.";
+                  break;
+              case 'auth/invalid-email':
+                  description = "The email address is not valid. Please check and try again.";
+                  break;
+          }
+      }
       toast({
         variant: "destructive",
         title: "Signup Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: description,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    const firestore = getFirestore(getApp());
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        const profileDocRef = doc(firestore, 'users', user.uid, 'profile', 'main-profile');
+        const docSnap = await getDoc(profileDocRef);
+
+        if (!docSnap.exists()) {
+            // This is a new user, create their profile
+            const newProfile = {
+                id: profileDocRef.id,
+                userId: user.uid,
+                fullName: user.displayName || 'New User',
+                email: user.email,
+                yearsOfExperience: 0,
+                currentOrLastJobTitle: "",
+                keySkills: [],
+                workModePreference: "remote",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                profileCompletenessScore: 20
+            };
+            await setDoc(profileDocRef, newProfile);
+            toast({
+                title: "Account Created!",
+                description: "Welcome to CareerPilot AI.",
+            });
+        } else {
+             toast({
+                title: "Welcome Back!",
+                description: "You've been successfully logged in.",
+            });
+        }
+        // Redirect will be handled by the useEffect hook
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Google Sign-In Failed",
+            description: error.message || "Could not sign in with Google. Please try again.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+
+  // Don't render the form if we are still checking auth state
+  if (isUserLoading || user) {
+    return null; 
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -109,6 +184,7 @@ export default function SignupPage() {
                     required 
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               <div className="grid gap-2">
@@ -120,6 +196,7 @@ export default function SignupPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -128,14 +205,16 @@ export default function SignupPage() {
                   id="password" 
                   type="password" 
                   required
+                  minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Create an account
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Creating Account...' : 'Create an account'}
               </Button>
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignup} disabled={isLoading}>
                 Sign up with Google
               </Button>
             </div>
