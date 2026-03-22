@@ -64,6 +64,7 @@ export default function SignupPage() {
         workModePreference: "remote", // Default value
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        profileCompletenessScore: 20 // Starter score
       };
       
       // 3. Save the document BLOCKINGLY to ensure it's created before proceeding.
