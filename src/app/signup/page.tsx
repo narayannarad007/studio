@@ -12,10 +12,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react";
-import { useAuth, setDocumentNonBlocking } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getApp } from "firebase/app";
 
 
@@ -66,8 +66,9 @@ export default function SignupPage() {
         updatedAt: serverTimestamp(),
       };
       
-      // 3. Save the document non-blockingly
-      setDocumentNonBlocking(profileDocRef, newProfile, { merge: false });
+      // 3. Save the document BLOCKINGLY to ensure it's created before proceeding.
+      // This is a critical step, so we await it to ensure it completes.
+      await setDoc(profileDocRef, newProfile);
 
       toast({
         title: "Account Created!",
@@ -77,6 +78,7 @@ export default function SignupPage() {
       // onAuthStateChanged listener in the Firebase provider.
 
     } catch (error: any) {
+      // This will catch errors from both createUserWithEmailAndPassword and setDoc
       toast({
         variant: "destructive",
         title: "Signup Failed",
