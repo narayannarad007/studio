@@ -75,3 +75,4 @@ This application is configured for deployment on **Firebase App Hosting**.
     firebase deploy --only hosting
     ```
     The Firebase CLI will build your Next.js application and deploy it to Firebase App Hosting.
+# careerpilot-ai
