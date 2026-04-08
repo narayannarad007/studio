@@ -43,8 +43,17 @@ const InterviewPrepOutputSchema = z.object({
 });
 export type InterviewPrepOutput = z.infer<typeof InterviewPrepOutputSchema>;
 
-export async function prepareForInterview(input: InterviewPrepInput): Promise<InterviewPrepOutput> {
-  return prepareForInterviewFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function prepareForInterview(input: InterviewPrepInput & { userId: string }): Promise<InterviewPrepOutput> {
+  const { userId, ...flowInput } = input;
+
+  const quota = await checkAndIncrementQuota(userId, 'interviewPreps');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free interview preparatory generations for this month. Please upgrade to Pro for more.`);
+  }
+
+  return prepareForInterviewFlow(flowInput);
 }
 
 const prepareForInterviewPrompt = ai.definePrompt({

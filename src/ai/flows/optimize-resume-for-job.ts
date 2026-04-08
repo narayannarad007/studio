@@ -66,8 +66,17 @@ const OptimizeResumeForJobOutputSchema = z.object({
 });
 export type OptimizeResumeForJobOutput = z.infer<typeof OptimizeResumeForJobOutputSchema>;
 
-export async function optimizeResumeForJob(input: OptimizeResumeForJobInput): Promise<OptimizeResumeForJobOutput> {
-  return optimizeResumeForJobFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function optimizeResumeForJob(input: OptimizeResumeForJobInput & { userId: string }): Promise<OptimizeResumeForJobOutput> {
+  const { userId, ...flowInput } = input;
+
+  const quota = await checkAndIncrementQuota(userId, 'resumeOptimizations');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free resume optimizations for this month. Please upgrade to Pro for more.`);
+  }
+
+  return optimizeResumeForJobFlow(flowInput);
 }
 
 const prompt = ai.definePrompt({

@@ -94,8 +94,17 @@ const AnalyzeJobOutputSchema = z.object({
 });
 export type AnalyzeJobOutput = z.infer<typeof AnalyzeJobOutputSchema>;
 
-export async function analyzeJob(input: AnalyzeJobInput): Promise<AnalyzeJobOutput> {
-  return analyzeJobFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function analyzeJob(input: AnalyzeJobInput & { userId: string }): Promise<AnalyzeJobOutput> {
+  const { userId, ...flowInput } = input;
+  
+  const quota = await checkAndIncrementQuota(userId, 'jobAnalyses');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free job analyses for this month. Please upgrade to Pro for more.`);
+  }
+
+  return analyzeJobFlow(flowInput);
 }
 
 const analyzeJobPrompt = ai.definePrompt({

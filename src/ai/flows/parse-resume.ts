@@ -53,8 +53,17 @@ const ParseResumeOutputSchema = z.object({
 });
 export type ParseResumeOutput = z.infer<typeof ParseResumeOutputSchema>;
 
-export async function parseResume(input: ParseResumeInput): Promise<ParseResumeOutput> {
-  return parseResumeFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function parseResume(input: ParseResumeInput & { userId: string }): Promise<ParseResumeOutput> {
+  const { userId, ...flowInput } = input;
+
+  const quota = await checkAndIncrementQuota(userId, 'resumeOptimizations');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free resume analyses for this month. Please upgrade to Pro for more.`);
+  }
+
+  return parseResumeFlow(flowInput);
 }
 
 const resumeParsingPrompt = ai.definePrompt({

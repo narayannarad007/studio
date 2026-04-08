@@ -24,8 +24,17 @@ const AICareerAssistantChatOutputSchema = z.string().describe("The AI assistant'
 export type AICareerAssistantChatOutput = z.infer<typeof AICareerAssistantChatOutputSchema>;
 
 // Wrapper function to call the Genkit flow
-export async function chatCareerAssistant(input: AICareerAssistantChatInput): Promise<AICareerAssistantChatOutput> {
-  return aiCareerAssistantChatFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function chatCareerAssistant(input: AICareerAssistantChatInput & { userId: string }): Promise<AICareerAssistantChatOutput> {
+  const { userId, ...flowInput } = input;
+
+  const quota = await checkAndIncrementQuota(userId, 'assistantMessages');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free AI assistant messages for this month. Please upgrade to Pro for more.`);
+  }
+
+  return aiCareerAssistantChatFlow(flowInput);
 }
 
 // Internal input schema for the prompt, where complex objects are stringified for better LLM parsing

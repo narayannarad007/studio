@@ -39,8 +39,17 @@ const GenerateCoverLetterOutputSchema = z.object({
 });
 export type GenerateCoverLetterOutput = z.infer<typeof GenerateCoverLetterOutputSchema>;
 
-export async function generateCoverLetter(input: GenerateCoverLetterInput): Promise<GenerateCoverLetterOutput> {
-  return generateCoverLetterFlow(input);
+import { checkAndIncrementQuota } from '@/lib/quota';
+
+export async function generateCoverLetter(input: GenerateCoverLetterInput & { userId: string }): Promise<GenerateCoverLetterOutput> {
+  const { userId, ...flowInput } = input;
+
+  const quota = await checkAndIncrementQuota(userId, 'coverLetters');
+  if (!quota.allowed) {
+    throw new Error(`QUOTA_EXCEEDED: You have used all ${quota.limit} free cover letters for this month. Please upgrade to Pro for more.`);
+  }
+
+  return generateCoverLetterFlow(flowInput);
 }
 
 const prompt = ai.definePrompt({

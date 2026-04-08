@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Table,
   TableBody,
@@ -15,28 +17,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
-
-const jobs = [
-  { id: '1', company: "Innovate Inc.", role: "Senior Frontend Engineer", status: "Applied", date: "2024-05-15" },
-  { id: '2', company: "Tech Solutions", role: "Product Manager", status: "Interview", date: "2024-05-20" },
-  { id: '3', company: "Data Corp", role: "Data Scientist", status: "Saved", date: "2024-05-22" },
-  { id: '4', company: "CloudNet", role: "DevOps Engineer", status: "Offer", date: "2024-05-18" },
-  { id: '5', company: "Creative LLC", role: "UX Designer", status: "Rejected", date: "2024-05-10" },
-];
+import { useJobs } from "@/hooks/useJobs";
+import { AddJobDialog } from "@/components/AddJobDialog";
+import { format } from "date-fns";
 
 export default function JobTrackerPage() {
+  const { jobs, isLoading } = useJobs();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-64 items-center justify-center gap-4">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <p className="text-muted-foreground animate-pulse">Loading your application tracker...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">Job Application Tracker</h1>
           <p className="text-muted-foreground">Manage your job applications from saved to offer.</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2" /> Add Job
-        </Button>
+        <AddJobDialog />
       </div>
 
       <Card>
@@ -45,37 +51,48 @@ export default function JobTrackerPage() {
           <CardDescription>A list of all your saved and applied jobs.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-medium">{job.company}</TableCell>
-                  <TableCell>{job.role}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      job.status === 'Interview' || job.status === 'Offer' ? 'default' : 
-                      job.status === 'Rejected' ? 'destructive' : 'secondary'
-                    }>{job.status}</Badge>
-                  </TableCell>
-                  <TableCell>{job.date}</TableCell>
-                  <TableCell className="text-right">
-                    <Link href={`/jobs/${job.id}`} passHref>
-                       <Button variant="ghost" size="sm">View</Button>
-                    </Link>
-                  </TableCell>
+          {jobs && jobs.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date Added</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {jobs.map((job) => (
+                  <TableRow key={job.id} className="hover:bg-muted/50 transition-colors">
+                    <TableCell className="font-medium">{job.company}</TableCell>
+                    <TableCell>{job.title}</TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        job.status === 'interview' || job.status === 'offer' ? 'default' : 
+                        job.status === 'rejected' ? 'destructive' : 'secondary'
+                      } className="capitalize">
+                        {job.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {job.createdAt?.toDate ? format(job.createdAt.toDate(), 'MMM d, yyyy') : 'Recently'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/jobs/${job.id}`} passHref>
+                         <Button variant="ghost" size="sm" className="hover:text-primary transition-colors font-semibold">View Analysis</Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground italic mb-4">You haven't added any jobs yet.</p>
+              <AddJobDialog />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
